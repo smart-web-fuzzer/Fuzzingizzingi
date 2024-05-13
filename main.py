@@ -19,7 +19,7 @@ print('''
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠁⠀⠀
 ''')
 
-print("Hello, this is Puzzingzzingi")
+print("Hello, this is Fuzzingzzingi")
 print("This purger is a program developed together by WHS 2nd class trainees.")
 print("======================================================================\n")
 
