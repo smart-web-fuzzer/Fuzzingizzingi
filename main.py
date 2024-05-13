@@ -20,7 +20,7 @@ print('''
 ''')
 
 print("Hello, this is Fuzzingzzingi")
-print("This purger is a program developed together by WHS 2nd class trainees.")
+print("This fuzzer is a program developed together by WHS 2nd class trainees.")
 print("======================================================================\n")
 
 # 프록시? 크롤러?에 URL 전달 하는 코드 구현 
