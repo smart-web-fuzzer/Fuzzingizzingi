@@ -16,25 +16,27 @@ def save_to_s3(bucket_name, key, data):
     s3_client.put_object(Bucket=bucket_name, Key=key, Body=data)
 
 def process_and_save_data(method, url, headers, body, source_ip, request_size, response_size):
+    # 메소드를 처리해서 크기 구현 
     """
     받은 데이터를 처리하고 S3에 저장합니다.
     :param method: HTTP 메소드
     :param url: 요청 URL
     :param headers: HTTP 헤더
-    :param body: 요청 본문
     :param source_ip: 소스 IP 주소
+    
     :param request_size: 요청 크기
     :param response_size: 응답 크기
     """
+    
+    # 메소드 처리 후 사이즈 지정 
     data = {
         'method': method,
         'url': url,
-        'headers': headers,
-        'body': body,
         'source_ip': source_ip,
         'request_size': request_size,
         'response_size': response_size
     }
+    
     # JSON 형식으로 데이터 변환
     json_data = json.dumps(data)
     
