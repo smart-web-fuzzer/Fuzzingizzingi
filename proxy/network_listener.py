@@ -55,7 +55,7 @@ def signal_handler(signal, frame):
     server.stop_server()
 
 if __name__ == "__main__":
-    # 메인 실행 부
+    # 메인 실행 부분
     server = NetworkListener(8888) 
     signal.signal(signal.SIGINT, signal_handler) 
     server.start_server()  
