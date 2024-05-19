@@ -1,49 +1,59 @@
-import boto3
-import json
+# logger.py
+
+from flask import Flask, jsonify, request
 from datetime import datetime
-# 성능 최적화 모듈인 9번 모듈을 사용하여 JSON 데이터를 처리해야 할듯... 
 
-# Boto3를 사용하여 S3 클라이언트 설정
-s3_client = boto3.client('s3')
+# PacketLog 클래스 정의
+class PacketLog:
+    def __init__(self, source_ip, destination_url, request_size, response_size):
+        self.timestamp = datetime.now()
+        self.source_ip = source_ip
+        self.destination_url = destination_url
+        self.request_size = request_size
+        self.response_size = response_size
 
-def save_to_s3(bucket_name, key, data):
-    """
-    AWS S3 버킷에 데이터를 저장합니다.
-    :param bucket_name: S3 버킷 이름
-    :param key: S3에 저장될 파일의 키 (경로 포함)
-    :param data: 저장할 데이터
-    """
-    s3_client.put_object(Bucket=bucket_name, Key=key, Body=data)
+    def to_dict(self):
+        return {
+            "timestamp": self.timestamp.isoformat(),
+            "source_ip": self.source_ip,
+            "destination_url": self.destination_url,
+            "request_size": self.request_size,
+            "response_size": self.response_size,
+        }
 
-def process_and_save_data(method, url, headers, body, source_ip, request_size, response_size):
-    # 메소드를 처리해서 크기 구현 
-    """
-    받은 데이터를 처리하고 S3에 저장합니다.
-    :param method: HTTP 메소드
-    :param url: 요청 URL
-    :param headers: HTTP 헤더
-    :param source_ip: 소스 IP 주소
-    
-    :param request_size: 요청 크기
-    :param response_size: 응답 크기
-    """
-    
-    # 메소드 처리 후 사이즈 지정 
-    data = {
-        'method': method,
-        'url': url,
-        'source_ip': source_ip,
-        'request_size': request_size,
-        'response_size': response_size
-    }
-    
-    # JSON 형식으로 데이터 변환
-    json_data = json.dumps(data)
-    
-    # 현재 시간을 기준으로 파일 이름 생성
-    now = datetime.now()
-    file_name = f"http_data_{now.strftime('%Y-%m-%d_%H-%M-%S')}.json"
-    
-    # S3에 데이터 저장
-    save_to_s3('your-bucket-name', file_name, json_data)
-    print(f"Data saved to S3: {file_name}")
+# PacketLogStore 클래스 정의 (로그 저장소)
+class PacketLogStore:
+    def __init__(self):
+        self.logs = []
+
+    def add_log(self, packet_log):
+        self.logs.append(packet_log)
+
+    def get_logs(self):
+        return [log.to_dict() for log in self.logs]
+
+# Flask 웹 서버 설정
+app = Flask(__name__)
+log_store = PacketLogStore()
+
+@app.route('/', methods=['GET'])
+def index():
+    return '''
+    <h1>Packet Logger Service</h1>
+    <a href="/log_packet">Log Packet</a>
+    '''
+
+@app.route('/log_packet', methods=['GET','POST'])
+def log_packet():
+    data = request.json
+    packet_log = PacketLog(
+        source_ip=data['source_ip'],
+        destination_url=data['destination_url'],
+        request_size=data['request_size'],
+        response_size=data['response_size']
+    )
+    log_store.add_log(packet_log)
+    return jsonify({"status": "success"}), 201
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
