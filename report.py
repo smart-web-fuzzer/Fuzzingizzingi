@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 
 class VulnerabilityReport:
-    def __init__(self, url, vulnerability_type, payload, http_request, http_response, severity, description=None, impact=None, reproduction_steps=None, recommendation=None):
+    def __init__(self, url, vulnerability_type, payload, http_request, http_response, severity):
         self.url = url
         self.vulnerability_type = vulnerability_type
         self.severity = severity

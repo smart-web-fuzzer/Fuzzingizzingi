@@ -8,6 +8,7 @@ class PacketLoggerServer:
         self.app = Flask(__name__, template_folder='templates', static_folder='static')
         self.log_store = PacketLogStore()
         self.setup_routes()
+        self.add_sample_logs()
 
     def setup_routes(self):
         @self.app.route('/')
@@ -47,13 +48,19 @@ class PacketLoggerServer:
                 payload="' OR '1'='1",
                 http_request="GET /vulnerable?input=' OR '1'='1 HTTP/1.1\nHost: example.com",
                 http_response="HTTP/1.1 200 OK\nContent-Type: text/html\n\n<html>...</html>",
-                severity="High",
-                description="입력값이 제대로 검증되지 않아 SQL 쿼리가 조작될 수 있음.",
-                impact="데이터베이스 조작 가능, 민감 정보 유출 위험",
-                reproduction_steps="1. 웹 브라우저에서 URL에 페이로드를 포함하여 접속합니다.\n2. 서버 응답을 확인하여 민감 데이터가 노출되는지 확인합니다.",
-                recommendation="입력값 검증 및 필터링, 준비된 쿼리 사용, ORM 사용하여 쿼리 생성"
+                severity="High"
             )
             return report.to_json()
+
+    def add_sample_logs(self):
+        # 테스트를 위한 샘플 로그 데이터 추가
+        sample_logs = [
+            PacketLog(source_ip="192.168.1.1", destination_url="http://example.com/page1", request_size=512, response_size=1024),
+            PacketLog(source_ip="192.168.1.2", destination_url="http://example.com/page2", request_size=256, response_size=512),
+            PacketLog(source_ip="192.168.1.3", destination_url="http://example.com/page3", request_size=128, response_size=256),
+        ]
+        for log in sample_logs:
+            self.log_store.add_log(log)
 
     def run(self, host='0.0.0.0', port=5000):
         self.app.run(host=host, port=port)
