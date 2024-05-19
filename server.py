@@ -1,7 +1,7 @@
 # server.py
 
 from flask import Flask, jsonify, request, render_template
-from proxy.logger import PacketLogStore, PacketLog
+from proxy.logger import PacketLogStore, PacketLog, VulnerabilityReport
 
 class PacketLoggerServer:
     def __init__(self):
@@ -41,11 +41,19 @@ class PacketLoggerServer:
         @self.app.route('/report_data', methods=['GET'])
         def get_report():
             # 임시 리포트 데이터 생성
-            report_data = {
-                "total_requests": len(self.log_store.get_logs()),
-                "summary": "This is a summary of the packet log data."
-            }
-            return jsonify(report_data)
+            report = VulnerabilityReport(
+                url="http://example.com/vulnerable",
+                vulnerability_type="SQL Injection",
+                payload="' OR '1'='1",
+                http_request="GET /vulnerable?input=' OR '1'='1 HTTP/1.1\nHost: example.com",
+                http_response="HTTP/1.1 200 OK\nContent-Type: text/html\n\n<html>...</html>",
+                severity="High",
+                description="입력값이 제대로 검증되지 않아 SQL 쿼리가 조작될 수 있음.",
+                impact="데이터베이스 조작 가능, 민감 정보 유출 위험",
+                reproduction_steps="1. 웹 브라우저에서 URL에 페이로드를 포함하여 접속합니다.\n2. 서버 응답을 확인하여 민감 데이터가 노출되는지 확인합니다.",
+                recommendation="입력값 검증 및 필터링, 준비된 쿼리 사용, ORM 사용하여 쿼리 생성"
+            )
+            return report.to_json()
 
     def run(self, host='0.0.0.0', port=5000):
         self.app.run(host=host, port=port)
