@@ -1,5 +1,3 @@
-# request_modifier.py
-
 import json
 
 class HTTPRequest:
