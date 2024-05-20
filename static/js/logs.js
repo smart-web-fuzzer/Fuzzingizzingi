@@ -1,5 +1,3 @@
-// static/js/logs.js
-
 document.addEventListener('DOMContentLoaded', function() {
     const logsDiv = document.getElementById('logs');
     const refreshInterval = 5000; // 5 seconds
