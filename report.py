@@ -19,6 +19,6 @@ class VulnerabilityReport:
             "HTTP Request": self.http_request,
             "HTTP Response": self.http_response,
         }
-
+    
     def to_json(self):
         return json.dumps(self.to_dict(), indent=4)
