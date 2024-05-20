@@ -1,0 +1,26 @@
+<!-- templates/index.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Packet Log Monitoring</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <header class="header">
+        <h1 class="title">Packet Log Monitoring</h1>
+    </header>
+    <main class="main-content">
+        <section class="logs-section clickable box">
+            <h2 class="section-title">Logs (Click to view)</h2>
+            <div id="logs" class="logs"></div>
+        </section>
+        <section class="report-section clickable box">
+            <h2 class="section-title">Report (Click to view)</h2>
+        </section>
+    </main>
+    <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+</body>
+</html>
