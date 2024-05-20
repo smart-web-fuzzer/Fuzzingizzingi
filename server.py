@@ -1,5 +1,3 @@
-# server.py
-
 from flask import Flask, jsonify, request, render_template
 from proxy.logger import PacketLogStore, PacketLog, VulnerabilityReport
 
