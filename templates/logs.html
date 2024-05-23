@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Packet Logs</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <header class="header">
+        <h1 class="title">Packet Logs</h1>
+    </header>
+    <main class="main-content">
+        <section class="logs-section">
+            <h2 class="section-title">Logs (Refreshing every 5 seconds)</h2>
+            <div id="logs" class="logs"></div>
+        </section>
+    </main>
+    <script src="{{ url_for('static', filename='js/logs.js') }}"></script>
+</body>
+</html>
