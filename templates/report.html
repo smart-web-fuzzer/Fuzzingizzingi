@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Packet Report</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <header class="header">
+        <h1 class="title">Packet Report</h1>
+    </header>
+    <main class="main-content">
+        <section class="report-section">
+            <h2 class="section-title">Report Details</h2>
+            <pre id="report" class="report"></pre>
+        </section>
+    </main>
+    <script src="{{ url_for('static', filename='js/report.js') }}"></script>
+</body>
+</html>

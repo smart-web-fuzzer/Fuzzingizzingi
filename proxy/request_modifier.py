@@ -1,61 +1,52 @@
-# 다른 코드에서 import 하는 기능 추가 필요 
-import re
+# request_modifier.py
+import json
 
-class http_request_response_modifier:
-    def __init__(self):
-        pass
+class HTTPRequest:
+    def __init__(self, method, url, headers=None, body=None, cookies=None):
+        self.method = method
+        self.url = url
+        self.headers = headers if headers is not None else {}
+        self.body = body
+        self.cookies = cookies if cookies is not None else {}
 
-    def modify_request(self, request, rules):
-        """HTTP 요청에 사용자 정의 규칙을 적용합니다."""
-        for rule in rules:
-            if 'block' in rule and rule['block']:
-                if re.search(rule['pattern'], request):
-                    return None  # 요청 차단
-            else:
-                request = re.sub(rule['pattern'], rule['replacement'], request)
-        return request
+    def set_method(self, method):
+        self.method = method
 
-    def modify_response(self, response, rules):
-        """HTTP 응답에 사용자 정의 규칙을 적용합니다."""
-        for rule in rules:
-            response = re.sub(rule['pattern'], rule['replacement'], response)
-        return response
+    def set_url(self, url):
+        self.url = url
 
-# 사용 예제
-modifier = http_request_response_modifier()
+    def add_header(self, key, value):
+        self.headers[key] = value
 
-# 요청 수정 및 필터링 규칙
-request_rules = [
-    {'pattern': 'User-Agent: .*', 'replacement': 'User-Agent: CustomUserAgent/1.0'},
-    {'pattern': 'GET /forbidden-path', 'replacement': '', 'block': True}
-]
+    def remove_header(self, key):
+        if key in self.headers:
+            del self.headers[key]
 
-# 응답 수정 규칙
-response_rules = [
-    {'pattern': 'Server: .*', 'replacement': 'Server: CustomServer/1.0'},
-    {'pattern': '<title>Old Title</title>', 'replacement': '<title>New Title</title>'}
-]
+    def set_body(self, body):
+        self.body = body
 
-# 수정 전 HTTP 요청
-http_request = """GET / HTTP/1.1
-Host: example.com
-User-Agent: Mozilla/5.0
+    def add_cookie(self, key, value):
+        self.cookies[key] = value
 
-"""
+    def remove_cookie(self, key):
+        if key in self.cookies:
+            del self.cookies[key]
 
-# 수정 전 HTTP 응답
-http_response = """HTTP/1.1 200 OK
-Server: Apache/2.4.1 (Unix)
-Content-Type: text/html
+    def to_dict(self):
+        return {
+            "method": self.method,
+            "url": self.url,
+            "headers": self.headers,
+            "body": self.body,
+            "cookies": self.cookies,
+        }
 
-<html><head><title>Old Title</title></head><body>Content</body></html>
-"""
+    def to_json(self):
+        return json.dumps(self.to_dict(), indent=4)
 
-# 요청 및 응답 수정
-modified_request = modifier.modify_request(http_request, request_rules)
-modified_response = modifier.modify_response(http_response, response_rules)
-
-print("Modified HTTP Request:")
-print(modified_request)
-print("\nModified HTTP Response:")
-print(modified_response)
+    def __str__(self):
+        request_line = f"{self.method} {self.url} HTTP/1.1"
+        headers = "\n".join([f"{key}: {value}" for key, value in self.headers.items()])
+        cookies = "; ".join([f"{key}={value}" for key, value in self.cookies.items()])
+        body = self.body if self.body else ""
+        return f"{request_line}\n{headers}\n\nCookies: {cookies}\n\n{body}"

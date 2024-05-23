@@ -1,0 +1,49 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f9;
+    color: #333;
+}
+
+.header {
+    background-color: #4CAF50;
+    padding: 1rem;
+    text-align: center;
+}
+
+.title {
+    margin: 0;
+    color: white;
+}
+
+.main-content {
+    padding: 1rem;
+}
+
+.box {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 1rem;
+    cursor: pointer;
+    margin-bottom: 1rem;
+}
+
+.box.clickable:hover {
+    background-color: #f1f1f1;
+}
+
+.section-title {
+    margin-top: 0;
+}
+
+.logs {
+    margin-top: 1rem;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.log-entry {
+    margin-bottom: 1rem;
+}
