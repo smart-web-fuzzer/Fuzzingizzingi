@@ -24,7 +24,7 @@ class ReceivePacket:
         # 퍼저에서 전달받은 수정된 패킷을 처리하는 로직 구현
         pass
 
-class send_packet:
+class SendPacket:
     def send_to_crawler(self, packet):
         # 크롤러에게 패킷을 전달하는 로직 구현
         pass
