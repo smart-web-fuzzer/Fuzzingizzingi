@@ -4,6 +4,9 @@ import json
 class Logger:
     def __init__(self):
         self.packet_logs = []
+        
+    def log(self, message):
+        print(f"[LOG] {message}")  # 로그 메시지를 콘솔에 출력
 
     class PacketLog:
         def __init__(self, source_ip, destination_url, request_size, response_size):
