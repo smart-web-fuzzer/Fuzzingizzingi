@@ -1,5 +1,3 @@
-# 05.23
-# settings.py
 BOT_NAME = 'Myproject'
 
 SPIDER_MODULES = ['Myproject.spiders']
@@ -43,7 +41,8 @@ DOWNLOAD_DELAY = 3
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
-    'Myproject.middlewares.SeleniumMiddleware': 543,
+    'middlewares.SeleniumMiddleware': 543,
+    # 경로 바뀌면 이것도 바꿔야 함
 }
 
 # Enable or disable extensions
@@ -55,8 +54,9 @@ DOWNLOADER_MIDDLEWARES = {
 # Configure item pipelines-비활성화 시(현재) 크롤링된 상태 그대로 남음(추가처리나 저장X), 활성화 시 후처리나 저장o
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    'Myproject.pipelines.DuplicateURLPipeline': 100,
-    'Myproject.pipelines.AWSDatabasePipeline': 200,
+    'pipelines.DuplicateURLPipeline': 100,
+    # 'pipelines.AWSDatabasePipeline': 200,
+    # 경로 바뀌면 이것도 바꿔야 함
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
@@ -65,3 +65,9 @@ AUTOTHROTTLE_ENABLED = True
 AUTOTHROTTLE_START_DELAY = 5
 AUTOTHROTTLE_MAX_DELAY = 60
 AUTOTHROTTLE_TARGET_CONCURRENCY = 1.0
+
+# MySQL DB 연결 정보 - 결정되면 실제 값으로 설정
+MYSQL_HOST = 'ubuntu@ec2-13-125-235-56.ap-northeast-2.compute.amazonaws.com'
+MYSQL_DATABASE = 'Fuzzingzzingi'
+MYSQL_USER = 'my_database_user'
+MYSQL_PASSWORD = 'my_database_password'
