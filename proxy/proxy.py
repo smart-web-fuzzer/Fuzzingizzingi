@@ -7,8 +7,6 @@ from traffic_interceptor import TrafficIntercept
 from request_modifier import HTTPRequest
 from logger import Logger
 # from performance import
-from data_transfer import ReceivePacket
-from data_transfer import SendPacket
 
 def signal_handler(signal, frame):
     print('Signal received, stopping server.')
