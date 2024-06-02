@@ -5,6 +5,9 @@
 
 import scrapy
 
+class CrawledURL(scrapy.item):
+    url = scrapy.Field()
 
-class MyprojectItem(scrapy.Item):
-    pass
+class PacketFromDB(scrapy.item):
+    url = scrapy.Field()
+    body = scrapy.Field()
