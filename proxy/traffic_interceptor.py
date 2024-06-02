@@ -3,6 +3,9 @@ import sys
 import socket
 import argparse
 import select
+import threading
+import signal
+from network_listener import NetworkListener
 
 class TrafficIntercept:
     def __init__(self, port):
@@ -10,20 +13,6 @@ class TrafficIntercept:
         self.cache = {}
         self.http_methods = ["GET", "POST", "DELETE", "PUT", "PATCH", "HEAD", "OPTIONS", "TRACE", "CONNECT"]
         self.server_socket = None
-
-    def start(self):
-        os.system('cls' if os.name == 'nt' else 'clear')
-        print("Proxy Started\n")
-
-        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server_socket.bind(('', self.port))
-        self.server_socket.listen(10)
-        print(f">> [{self.port}] Listening...\n")
-
-        while True:
-            client_socket, addr = self.server_socket.accept()
-            print(">> Connected!\n")
-            self.handle_client(client_socket)
 
     def handle_client(self, client_socket):
         req = client_socket.recv(65535).decode()
@@ -158,14 +147,19 @@ class TrafficIntercept:
         print(">> Cache Used!\n")
         client_socket.close()
 
+def signal_handler(signal, frame):
+    print('Signal received, stopping server.')
+    server.stop_server()
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', type=int, help="port number")
     args = parser.parse_args()
     my_port = args.p
     if my_port:
-        server = TrafficIntercept(my_port)
-        server.start()
+        server = NetworkListener(my_port, TrafficIntercept)
+        signal.signal(signal.SIGINT, signal_handler)
+        server.start_server()
     else:
         print("[!] python <file.py> -p <port> 형식으로 접속해주세요!")
         sys.exit()
