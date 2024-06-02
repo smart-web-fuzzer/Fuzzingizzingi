@@ -1,20 +1,89 @@
-# 05.23
-# pipelines.py
 from scrapy.exceptions import DropItem
+import mysql.connector
+from mysql.connector import errorcode
+from items import PacketFromDB
+from items import CrawledURL
+import logging
 
 class DuplicateURLPipeline:
-    def __init__(self):
+    def __init__(self, host, database, user, password):
         self.seen_urls = set()
+        self.host = host
+        self.database = database
+        self.user = user
+        self.password = password
+        self.connection = None
+        self.cursor = None
 
-    def process_item(self, item, spider):
-        normalized_url = spider.normalize_url(item['url'])  # URL 정규화
+    @classmethod
+    def from_crawler(cls, crawler):
+        host = crawler.settings.get('MYSQL_HOST')
+        database = crawler.settings.get('MYSQL_DATABASE')
+        user = crawler.settings.get('MYSQL_USER')
+        password = crawler.settings.get('MYSQL_PASSWORD')
+        return cls(host, database, user, password)
+
+    def open_spider(self, spider):
+        try:
+            # MySQL 데이터베이스에 연결
+            self.connection = mysql.connector.connect(
+                host=self.host,
+                database=self.database,
+                user=self.user,
+                password=self.password
+            )
+            if self.connection.is_connected():
+                self.cursor = self.connection.cursor()
+
+        except errorcode as e:
+            spider.logger.error(f"Error while connecting to MySQL: {e}") # 연결 오류 로깅
+
+    def close_spider(self, spider):
+        try:
+            # url, body 데이터 가져오기
+            get_query = """
+            SELECT url, response_body  FROM requests 
+            """
+
+            self.cursor.execute(get_query)
+
+            pckt = self.cursor.fetchall()
+
+            for row in pckt:
+                PacketFromDB[row[0]] = row[1]
+
+        except errorcode as e:
+            logging.error(f'Error {e} When Get URL from DB')
+
+        finally:
+            if self.connection.is_connected():
+
+                self.connection.commit() # 데이터베이스 저장 커밋하기
+                self.cursor.close()
+                self.connection.close() # 데이터베이스 연결 닫기
+
+    def process_item(self, spider):
+        normalized_url = spider.normalize_url(CrawledURL['url'])  # URL 정규화
         if normalized_url in self.seen_urls:
-            raise DropItem(f"Duplicate URL found: {item['url']}")
+            raise DropItem(f"Duplicate URL found: {CrawledURL['url']}")
+
         else:
             self.seen_urls.add(normalized_url)
-            return item
-            
-class AWSDatabasePipeline:
-    def process_item(self, item, spider):
-        # AWS 데이터베이스에 저장하는 로직 추가
-        pass
+
+            try:
+
+                # 데이터 삽입
+                insert_query = """
+                INSERT INTO collected_urls (url)
+                VALUES (%s)
+                """
+                data = (normalized_url,)
+
+                self.cursor.execute(insert_query, data)
+                self.connection.commit()
+
+            except errorcode as e:
+                logging.error(f'Error {e} When Send URL to DB')
+                self.connection.rollback()  # 롤백 추가
+
+            return CrawledURL
