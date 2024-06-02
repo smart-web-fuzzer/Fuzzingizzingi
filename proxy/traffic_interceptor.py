@@ -13,7 +13,7 @@ class TrafficIntercept:
     def __init__(self, port):
         self.port = port
         self.cache = {}
-        self.http_methods = ["GET", "POST", "DELETE", "PUT", "PATCH", "HEAD", "OPTIONS", "TRACE", "CONNECT"]
+        self.http_methods = ["GET"]
         self.server_socket = None
 
     def handle_client(self, client_socket, addr):
@@ -47,8 +47,6 @@ class TrafficIntercept:
             print(f"[INFO] Connection closed with {addr}")
 
     def handle_connect_request(self, client_socket, url):
-        # HTTPS CONNECT 요청을 처리하는 코드가 필요하지 않음
-        # 대신 HTTP GET 요청으로 처리
         try:
             target_host, target_port = url.split(":")
             target_port = int(target_port)
