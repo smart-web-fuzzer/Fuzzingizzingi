@@ -1,53 +1,55 @@
-# crawler.py_0525_스팸패킷필터링
+#crawler.py
+
+
 import scrapy
 import tldextract
 from urllib.parse import urlparse, parse_qs, urlunparse, urlencode
 import logging
 
 class MySpider(scrapy.Spider):
-    name = 'crawler'
-    start_urls = ['http://www.itsecgames.com/']
-    domain_origin = tldextract.extract(start_urls[0]).domain
-#
-    def __init__(self, *args, **kwargs):
+    name = 'cloud'
+
+    def __init__(self, start_url=None, *args, **kwargs):
         super(MySpider, self).__init__(*args, **kwargs)
+
+        if start_url:
+            self.start_urls = [start_url]
+        else:
+            raise ValueError("No start URL provided")
+
+        self.domain_origin = tldextract.extract(self.start_urls[0]).domain
         self.output = open('output.txt', 'w')
-        self.seen_urls = set()  # 중복 URL 추적하기 위한 집합
+        self.seen_urls = set()
 
     def parse(self, response):
         try:
-            # URL 정규화
+            # response.headers.get('Content-Type') 사용해 응답이 텍스트인지 확인 후, 텍스트 아닌 경우 return 호출해 처리 건너뜀. 이미지나 다른 형식의 응답 처리하는 중 발생하는 오류 방지
+            if not response.headers.get('Content-Type', b'').startswith(b'text'):
+                # Skip non-text responses
+                return
+
             normalized_url = self.normalize_url(response.url)
 
             if normalized_url not in self.seen_urls:
-                # seen_urls 이용해 url 중복 안 되도록
                 self.seen_urls.add(normalized_url)
                 self.output.write(f'{normalized_url}\n')
 
-                # 페이지에서 링크 추출
-                img_links = response.xpath('//img/@src').extract()
                 a_links = response.xpath('//a/@href').extract()
-                links = img_links + a_links
 
-                for link in links:
+                for link in a_links:
                     link = response.urljoin(link)
                     link = self.normalize_url(link)
                     link_domain = urlparse(link).netloc
 
                     if self.domain_origin in link_domain and link not in self.seen_urls:
-                        self.seen_urls.add(link)
                         yield scrapy.Request(url=link, callback=self.parse)
-                        print(f'수집한 URL : {link}')
-                        self.output.write(f'{link}\n')
 
         except Exception as e:
-            logging.error(f'Error detected in Function parse of main as {e}')
+            logging.error(f'Error detected in Function parse: {e}')
 
     def normalize_url(self, url):
         parsed_url = urlparse(url)
         query = parse_qs(parsed_url.query)
-
-        # 의미 없는 파라미터 제거 (random값 등)
         filtered_query = {k: v for k, v in query.items() if k not in ['random', 'session', 'timestamp']}
         normalized_query = urlencode(filtered_query, doseq=True)
 
@@ -62,5 +64,4 @@ class MySpider(scrapy.Spider):
         return normalized_url
 
     def closed(self, reason):
-
         self.output.close()
