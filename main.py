@@ -6,11 +6,12 @@ import socket
 import time
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
-from crawler import MySpider
+from crawler.spiders.crawler import MySpider
 # from Myproject.Myproject.items import PacketFromDB
 # from Myproject.Myproject.spiders.go_to_fuzzer import SendToFuzzer
 import sys
 # from server import PacketLoggerServer
+
 
 
 def connect_server():
