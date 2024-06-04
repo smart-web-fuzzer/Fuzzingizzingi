@@ -1,21 +1,5 @@
-import mysql.connector
-from mysql.connector import Error
 import json
 from urllib.parse import urlparse, parse_qs
-
-def create_connection(host_name, user_name, user_password, db_name):
-    connection = None
-    try:
-        connection = mysql.connector.connect(
-            host=host_name,
-            user=user_name,
-            passwd=user_password,
-            database=db_name
-        )
-        print("MySQL Database connection successful")
-    except Error as e:
-        print(f"The error '{e}' occurred")
-    return connection
 
 class HTTPRequest:
     def __init__(self, method, url, headers=None, body=None, cookies=None, user_agent=None, protocol_version="HTTP/1.1"):
@@ -101,33 +85,34 @@ class HTTPResponse:
         body = self.body if self.body else ""
         return f"{self.status_line}\n{headers}\n\nCookies: {cookies}\n\n{body}"
 
-def save_packet(connection, request, response):
-    cursor = connection.cursor()
-    try:
-        # Insert into requests table
-        insert_request_query = """
-        INSERT INTO requests (url, parameters, method, protocol_version, headers, cookies, response_body)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """
-        request_values = (
-            request.url,
-            json.dumps(request.url_params),
-            request.method,
-            request.protocol_version,
-            json.dumps(request.headers),
-            json.dumps(request.cookies),
-            response.body
-        )
-        cursor.execute(insert_request_query, request_values)
-        connection.commit()
-        print("Request and Response saved successfully.")
-    except Error as e:
-        print(f"The error '{e}' occurred")
-    finally:
-        cursor.close()
+# MySQL 관련 코드 주석 처리
+# def save_packet(connection, request, response):
+#     cursor = connection.cursor()
+#     try:
+#         # Insert into requests table
+#         insert_request_query = """
+#         INSERT INTO requests (url, parameters, method, protocol_version, headers, cookies, response_body)
+#         VALUES (%s, %s, %s, %s, %s, %s, %s)
+#         """
+#         request_values = (
+#             request.url,
+#             json.dumps(request.url_params),
+#             request.method,
+#             request.protocol_version,
+#             json.dumps(request.headers),
+#             json.dumps(request.cookies),
+#             response.body
+#         )
+#         cursor.execute(insert_request_query, request_values)
+#         connection.commit()
+#         print("Request and Response saved successfully.")
+#     except Error as e:
+#         print(f"The error '{e}' occurred")
+#     finally:
+#         cursor.close()
 
 # Example usage:
-connection = create_connection("your_host", "your_username", "your_password", "your_db_name")
+# connection = create_connection("your_host", "your_username", "your_password", "your_db_name")
 
 # Assuming you have an HTTPRequest and HTTPResponse instance:
 request = HTTPRequest(
@@ -146,7 +131,7 @@ response = HTTPResponse(
     body="<html>Response body</html>"
 )
 
-save_packet(connection, request, response)
+# save_packet(connection, request, response)
 
 def parse_http_response(raw_response):
     # 응답을 줄 단위로 나눕니다.
@@ -171,26 +156,5 @@ def parse_http_response(raw_response):
     response = HTTPResponse(status_line, headers, body)
     return response
 
-raw_response = """HTTP/1.1 200 OK
-Date: Sun, 02 Jun 2024 07:37:33 GMT
-Expires: -1
-Cache-Control: private, max-age=0
-Content-Type: text/html; charset=ISO-8859-1
-Content-Security-Policy-Report-Only: object-src 'none';base-uri 'self';script-src 'nonce-9Xoh0yslWpco6d7p8JxQ1Q' 'strict-dynamic' 'report-sample' 'unsafe-eval' 'unsafe-inline' https: http:;report-uri https://csp.withgoogle.com/csp/gws/other-hp
-P3P: CP="This is not a P3P policy! See g.co/p3phelp for more info."
-Content-Encoding: gzip
-Server: gws
-X-XSS-Protection: 0
-X-Frame-Options: SAMEORIGIN
-Set-Cookie: 1P_JAR=2024-06-02-07; expires=Tue, 02-Jul-2024 07:37:33 GMT; path=/; domain=.google.com; Secure, AEC=AQTF6HxHTgR6_lpfDKIdT7OnjogUM9vu7kbT-CK1KvwJivdTkkk2U3Uo0A; expires=Fri, 29-Nov-2024 07:37:33 GMT; path=/; domain=.google.com; Secure; HttpOnly; SameSite=lax, NID=514=xCsUPAKbvuxzZCSznvx6HnmoTDKFqWjrGLvgCm53BKJAXfPHs_AuHCwkcR-Ea4l00Kwmdy_--GMg7x0Z8lJX5HO1-Z2Ln-Xq3kXsHkZZ_gOmYEZ1iP5fNjs6TbL8RrMuNrEnzA8xsRDXsKS7uXAB1t5AY-SYbI64_Rvlwh98NDY; expires=Mon, 02-Dec-2024 07:37:33 GMT; path=/; domain=.google.com; HttpOnly
-Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
-Transfer-Encoding: chunked
-
-<!doctype html><html itemscope="" itemtype="http://schema.org/WebPage" lang="ko"><head><meta content="text/html; charset=UTF-8" http-equiv="Content-Type"><meta content="/images/branding/googleg/1x/googleg_standard_color_128dp.png" itemprop="image"><title>Google</title></head><body><h1>Google</h1><p>Welcome to Google!</p></body></html>
-"""
-
-# 줄인 응답 패킷을 파싱
-response = parse_http_response(raw_response)
-
-# 데이터베이스에 저장
-save_packet(connection, request, response)
+# 응답 패킷을 파싱
+# response = parse_http_response()
