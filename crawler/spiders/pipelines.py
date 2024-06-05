@@ -39,28 +39,11 @@ class DuplicateURLPipeline:
             spider.logger.error(f"Error while connecting to MySQL: {e}") # 연결 오류 로깅
 
     def close_spider(self, spider):
-        try:
-            # url, body 데이터 가져오기
-            get_query = """
-            SELECT url, response_body  FROM requests 
-            """
 
-            self.cursor.execute(get_query)
-
-            pckt = self.cursor.fetchall()
-
-            for row in pckt:
-                PacketFromDB[row[0]] = row[1]
-
-        except errorcode as e:
-            logging.error(f'Error {e} When Get URL from DB')
-
-        finally:
-            if self.connection.is_connected():
-
-                self.connection.commit() # 데이터베이스 저장 커밋하기
-                self.cursor.close()
-                self.connection.close() # 데이터베이스 연결 닫기
+        if self.connection.is_connected():
+            self.connection.commit() # 데이터베이스 저장 커밋하기
+            self.cursor.close()
+            self.connection.close() # 데이터베이스 연결 닫기
 
     def process_item(self, spider):
         normalized_url = spider.normalize_url(CrawledURL['url'])  # URL 정규화

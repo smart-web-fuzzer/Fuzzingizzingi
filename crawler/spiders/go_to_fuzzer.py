@@ -20,7 +20,7 @@ class SendToFuzzer:
                 # 정해야 할 것!
                 # 어떤 attr가 존재하면 어떤 퍼저 모듈로 보낼 것인지..?!
 
-                if attr == 'text':
+                #if attr == 'text':
 
 
 
