@@ -12,11 +12,9 @@ from crawler.spiders.crawler import MySpider
 import sys
 # from server import PacketLoggerServer
 
-
-
 def connect_server():
     try:
-        server_ip = "localhost"
+        server_ip = "43.202.51.186"
         server_port = 8888
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # IPv4, TCP
         client_socket.connect((server_ip, server_port))
