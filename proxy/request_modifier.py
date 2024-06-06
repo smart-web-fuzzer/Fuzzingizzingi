@@ -1,8 +1,13 @@
+import os
+import sys
 import json
 from urllib.parse import urlparse, parse_qs
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from db_connector import create_connection
 
 class HTTPRequest:
     def __init__(self, method, url, headers=None, body=None, cookies=None, user_agent=None, protocol_version="HTTP/1.1"):
+        self.db_connection = create_connection('localhost', 'zzingzzingi', '!Ru7eP@ssw0rD!12', 'fuzzingzzingi')
         self.method = method
         self.url = url
         self.headers = headers if headers is not None else {}
