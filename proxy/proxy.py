@@ -1,6 +1,7 @@
 import sys
 import signal
 from network_listener import NetworkListener
+from logger import Logger
 # from traffic_interceptor import TrafficIntercept
 # from request_modifier import HTTPRequest
 # from performance import
