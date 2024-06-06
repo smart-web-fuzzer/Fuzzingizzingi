@@ -2,12 +2,13 @@ import socket
 import threading
 
 def handle_client(client_socket):
+    print("Client connected")  # 클라이언트가 접속했음을 출력
     request = client_socket.recv(1024)
     print(f"Received: {request.decode()}")
 
     # AWS 서버에 연결
     remote_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    remote_socket.connect(("43.202.51.186", 80))
+    remote_socket.connect(("43.202.51.186", 8888))
     remote_socket.send(request)
 
     # AWS 서버로부터 응답을 받아 클라이언트로 전송
