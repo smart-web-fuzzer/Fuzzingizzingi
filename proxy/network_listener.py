@@ -8,7 +8,7 @@ def handle_client(client_socket):
 
     # AWS 서버에 연결
     remote_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    remote_socket.connect(("43.202.51.186", 8888))
+    remote_socket.connect(("43.202.51.186", 80))
     remote_socket.send(request)
 
     # AWS 서버로부터 응답을 받아 클라이언트로 전송
@@ -20,9 +20,9 @@ def handle_client(client_socket):
 
 def start_proxy_server():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind(("0.0.0.0", 8080))
+    server.bind(("0.0.0.0", 8888))
     server.listen(5)
-    print("Listening on port 8080")
+    print("Listening on port 8888")
 
     while True:
         client_socket, addr = server.accept()
