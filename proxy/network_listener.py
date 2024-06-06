@@ -2,10 +2,15 @@ import socket
 import threading
 
 class NetworkListener:
-    def handle_client(client_socket):
-        print("Client connected")  # 클라이언트가 접속했음을 출력
+    def __init__(self, port, logger):
+        self.port = port
+        self.logger = logger
+        self.server_socket = None
+
+    def handle_client(self, client_socket):
+        self.logger.log("Client connected")
         request = client_socket.recv(1024)
-        print(f"Received: {request.decode()}")
+        self.logger.log(f"Received: {request.decode()}")
 
         # AWS 서버에 연결
         remote_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -19,17 +24,18 @@ class NetworkListener:
         remote_socket.close()
         client_socket.close()
 
-    def start_proxy_server():
-        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server.bind(("0.0.0.0", 8888))
-        server.listen(5)
-        print("Listening on port 8888")
+    def start_server(self):
+        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_socket.bind(("0.0.0.0", self.port))
+        self.server_socket.listen(5)
+        self.logger.log(f"Listening on port {self.port}")
 
         while True:
-            client_socket, addr = server.accept()
-            print(f"Accepted connection from {addr}")
-            handler = threading.Thread(target=NetworkListener.handle_client, args=(client_socket,))
+            client_socket, addr = self.server_socket.accept()
+            self.logger.log(f"Accepted connection from {addr}")
+            handler = threading.Thread(target=self.handle_client, args=(client_socket,))
             handler.start()
 
-if __name__ == "__main__":
-    NetworkListener.start_proxy_server()
+    def stop_server(self):
+        if self.server_socket:
+            self.server_socket.close()
