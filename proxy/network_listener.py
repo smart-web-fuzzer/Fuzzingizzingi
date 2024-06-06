@@ -28,8 +28,8 @@ class NetworkListener:
         while True:
             client_socket, addr = server.accept()
             print(f"Accepted connection from {addr}")
-            handler = threading.Thread(target=handle_client, args=(client_socket,))
+            handler = threading.Thread(target=NetworkListener.handle_client, args=(client_socket,))
             handler.start()
 
 if __name__ == "__main__":
-    start_proxy_server()
+    NetworkListener.start_proxy_server()
