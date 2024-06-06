@@ -7,7 +7,10 @@ import select
 import threading
 import signal
 import requests
-from network_listener import NetworkListener  # 동일 폴더에 있는 NetworkListener를 임포트
+from network_listener import NetworkListener
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from db_connector import create_connection
+from mysql.connector import Error
 
 class TrafficIntercept:
     def __init__(self, port):
@@ -15,6 +18,24 @@ class TrafficIntercept:
         self.cache = {}
         self.http_methods = ["GET"]
         self.server_socket = None
+        # 데이터베이스 연결 시도
+        self.db_connection = create_connection('localhost', 'zzingzzingi', '!Ru7eP@ssw0rD!12', 'fuzzingzzingi')
+        if self.db_connection.is_connected():
+            print("MySQL Fuzzingzzingi Database connection successful")
+
+    def fetch_urls_from_db(self):
+        urls = []
+        try:
+            cursor = self.db_connection.cursor()
+            cursor.execute("SELECT url FROM collected_urls")
+            rows = cursor.fetchall()
+            for row in rows:
+                urls.append(row[0])
+        except Error as e:
+            print(f"The error '{e}' occurred")
+        finally:
+            cursor.close()
+        return urls
 
     def handle_client(self, client_socket, addr):
         try:
