@@ -14,7 +14,7 @@ import sys
 
 def connect_server():
     try:
-        server_ip = "43.202.51.186"
+        server_ip = "54.180.234.192"
         server_port = 8888
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # IPv4, TCP
         client_socket.connect((server_ip, server_port))

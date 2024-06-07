@@ -59,6 +59,9 @@ ITEM_PIPELINES = {
     # 경로 바뀌면 이것도 바꿔야 함
 }
 
+# Proxy settings
+HTTP_PROXY = 'http://localhost:9999'
+
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
 AUTOTHROTTLE_ENABLED = True
