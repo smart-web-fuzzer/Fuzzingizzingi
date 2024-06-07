@@ -14,7 +14,7 @@ class NetworkListener:
 
         # AWS 서버에 연결
         remote_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        remote_socket.connect(("43.202.51.186", 80))
+        remote_socket.connect(("13.209.63.65", 80))
         remote_socket.send(request)
 
         # AWS 서버로부터 응답을 받아 클라이언트로 전송
