@@ -4,24 +4,39 @@ import json
 from urllib.parse import urlparse, parse_qs
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from db_connector import create_connection
+from mysql.connector import Error
 
 class HTTPRequest:
-    def __init__(self, method, url, headers=None, body=None, cookies=None, user_agent=None, protocol_version="HTTP/1.1"):
-        self.db_connection = create_connection('localhost', 'zzingzzingi', '!Ru7eP@ssw0rD!12', 'fuzzingzzingi')
-        self.method = method
-        self.url = url
-        self.headers = headers if headers is not None else {}
-        self.body = body
-        self.cookies = cookies if cookies is not None else {}
-        self.user_agent = user_agent
-        self.protocol_version = protocol_version
+    def __init__(self, raw_data):
+        self.method = None
+        self.url = None
+        self.headers = {}
+        self.body = None
+        self.cookies = {}
+        self.user_agent = None
+        self.protocol_version = "HTTP/1.1"
 
-        self.url_params = self.parse_url_params(url)
-        self.cookie_dict = self.parse_cookies(self.headers.get("Cookie", ""))
+        self.raw_data = raw_data
+        self.parse_request(raw_data)
 
-    def parse_url_params(self, url):
-        parsed_url = urlparse(url)
-        return parse_qs(parsed_url.query)
+    def parse_request(self, raw_data):
+        lines = raw_data.split("\r\n")
+        request_line = lines[0]
+        self.method, self.url, self.protocol_version = request_line.split(" ")
+        header_lines = lines[1:]
+        self.headers = self.parse_headers(header_lines)
+
+    def parse_headers(self, header_lines):
+        headers = {}
+        for line in header_lines:
+            if ": " in line:
+                key, value = line.split(": ", 1)
+                headers[key] = value
+                if key == "Cookie":
+                    self.cookies = self.parse_cookies(value)
+                if key == "User-Agent":
+                    self.user_agent = value
+        return headers
 
     def parse_cookies(self, cookie_str):
         cookies = {}
@@ -42,25 +57,38 @@ class HTTPRequest:
             "cookies": self.cookies,
             "user_agent": self.user_agent,
             "protocol_version": self.protocol_version,
-            "url_params": self.url_params,
         }
 
     def to_json(self):
         return json.dumps(self.to_dict(), indent=4)
 
-    def __str__(self):
-        request_line = f"{self.method} {self.url} {self.protocol_version}"
-        headers = "\n".join([f"{key}: {value}" for key, value in self.headers.items()])
-        cookies = "; ".join([f"{key}={value}" for key, value in self.cookies.items()])
-        body = self.body if self.body else ""
-        return f"{request_line}\n{headers}\n\nCookies: {cookies}\n\n{body}"
-
 class HTTPResponse:
-    def __init__(self, status_line, headers=None, body=None):
-        self.status_line = status_line
-        self.headers = headers if headers is not None else {}
-        self.body = body
-        self.cookies = self.parse_cookies(self.headers.get("Set-Cookie", ""))
+    def __init__(self, raw_data):
+        self.status_line = None
+        self.headers = {}
+        self.body = None
+        self.cookies = {}
+
+        self.raw_data = raw_data
+        self.parse_response(raw_data)
+
+    def parse_response(self, raw_data):
+        lines = raw_data.split("\r\n")
+        self.status_line = lines[0]
+        header_lines = lines[1:]
+        self.headers = self.parse_headers(header_lines)
+        if "\r\n\r\n" in raw_data:
+            self.body = raw_data.split("\r\n\r\n", 1)[1]
+
+    def parse_headers(self, header_lines):
+        headers = {}
+        for line in header_lines:
+            if ": " in line:
+                key, value = line.split(": ", 1)
+                headers[key] = value
+                if key == "Set-Cookie":
+                    self.cookies = self.parse_cookies(value)
+        return headers
 
     def parse_cookies(self, cookie_str):
         cookies = {}
@@ -84,82 +112,47 @@ class HTTPResponse:
     def to_json(self):
         return json.dumps(self.to_dict(), indent=4)
 
-    def __str__(self):
-        headers = "\n".join([f"{key}: {value}" for key, value in self.headers.items()])
-        cookies = "; ".join([f"{key}={value}" for key, value in self.cookies.items()])
-        body = self.body if self.body else ""
-        return f"{self.status_line}\n{headers}\n\nCookies: {cookies}\n\n{body}"
+def save_packet(connection, raw_request, raw_response):
+    if connection is None:
+        print("Database connection failed.")
+        return
 
-# MySQL 관련 코드 주석 처리
-# def save_packet(connection, request, response):
-#     cursor = connection.cursor()
-#     try:
-#         # Insert into requests table
-#         insert_request_query = """
-#         INSERT INTO requests (url, parameters, method, protocol_version, headers, cookies, response_body)
-#         VALUES (%s, %s, %s, %s, %s, %s, %s)
-#         """
-#         request_values = (
-#             request.url,
-#             json.dumps(request.url_params),
-#             request.method,
-#             request.protocol_version,
-#             json.dumps(request.headers),
-#             json.dumps(request.cookies),
-#             response.body
-#         )
-#         cursor.execute(insert_request_query, request_values)
-#         connection.commit()
-#         print("Request and Response saved successfully.")
-#     except Error as e:
-#         print(f"The error '{e}' occurred")
-#     finally:
-#         cursor.close()
+    cursor = connection.cursor()
+    try:
+        request = HTTPRequest(raw_request)
+        response = HTTPResponse(raw_response)
 
-# Example usage:
-# connection = create_connection("your_host", "your_username", "your_password", "your_db_name")
+        # Insert into requests table
+        insert_request_query = """
+        INSERT INTO requests (url, method, protocol_version, headers, cookies, request_body)
+        VALUES (%s, %s, %s, %s, %s, %s)
+        """
+        request_values = (
+            request.url,
+            request.method,
+            request.protocol_version,
+            json.dumps(request.headers),
+            json.dumps(request.cookies),
+            request.body
+        )
+        cursor.execute(insert_request_query, request_values)
+        connection.commit()
 
-# Assuming you have an HTTPRequest and HTTPResponse instance:
-request = HTTPRequest(
-    method="GET",
-    url="http://example.com",
-    headers={"User-Agent": "test-agent", "Cookie": "test_cookie=1"},
-    body=None,
-    cookies={"test_cookie": "1"},
-    user_agent="test-agent",
-    protocol_version="HTTP/1.1"
-)
+        # Insert into responses table
+        insert_response_query = """
+        INSERT INTO responses (status_line, headers, body)
+        VALUES (%s, %s, %s)
+        """
+        response_values = (
+            response.status_line,
+            json.dumps(response.headers),
+            response.body
+        )
+        cursor.execute(insert_response_query, response_values)
+        connection.commit()
 
-response = HTTPResponse(
-    status_line="HTTP/1.1 200 OK",
-    headers={"Content-Type": "text/html; charset=UTF-8", "Set-Cookie": "response_cookie=1"},
-    body="<html>Response body</html>"
-)
-
-# save_packet(connection, request, response)
-
-def parse_http_response(raw_response):
-    # 응답을 줄 단위로 나눕니다.
-    lines = raw_response.split("\n")
-    
-    # 상태 줄과 헤더를 분리합니다.
-    status_line = lines[0]
-    headers = {}
-    body = ""
-    is_body = False
-    
-    for line in lines[1:]:
-        if is_body:
-            body += line + "\n"
-        elif line == "":
-            is_body = True
-        else:
-            if ": " in line:
-                key, value = line.split(": ", 1)
-                headers[key] = value
-    
-    response = HTTPResponse(status_line, headers, body)
-    return response
-
-# 응답 패킷을 파싱
-# response = parse_http_response()
+        print("Request and Response saved successfully.")
+    except Error as e:
+        print(f"The error '{e}' occurred")
+    finally:
+        cursor.close()
