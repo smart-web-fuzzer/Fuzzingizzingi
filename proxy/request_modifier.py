@@ -1,9 +1,5 @@
-import os
-import sys
 import json
 from urllib.parse import urlparse, parse_qs
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from db_connector import create_connection
 from mysql.connector import Error
 
 class HTTPRequest:
@@ -122,7 +118,7 @@ def save_packet(connection, raw_request, raw_response):
         request = HTTPRequest(raw_request)
         response = HTTPResponse(raw_response)
 
-        # Insert into requests table
+        # requests 테이블에 데이터 추가
         insert_request_query = """
         INSERT INTO requests (url, method, protocol_version, headers, cookies, request_body)
         VALUES (%s, %s, %s, %s, %s, %s)
@@ -138,7 +134,7 @@ def save_packet(connection, raw_request, raw_response):
         cursor.execute(insert_request_query, request_values)
         connection.commit()
 
-        # Insert into responses table
+        # responses 테이블에 데이터 추가
         insert_response_query = """
         INSERT INTO responses (status_line, headers, body)
         VALUES (%s, %s, %s)

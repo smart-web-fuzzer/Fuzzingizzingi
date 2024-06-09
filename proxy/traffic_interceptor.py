@@ -1,27 +1,20 @@
 import os
 import sys
 import socket
-import ssl
-import argparse
 import select
-import threading
-import signal
 import requests
-from network_listener import NetworkListener
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from db_connector import create_connection
 from mysql.connector import Error
 
 class TrafficIntercept:
-    def __init__(self, port):
-        self.port = port
+    def __init__(self, db_connection, logger):
         self.cache = {}
         self.http_methods = ["GET"]
-        self.server_socket = None
-        # 데이터베이스 연결 시도
-        self.db_connection = create_connection('localhost', 'zzingzzingi', '!Ru7eP@ssw0rD!12', 'fuzzingzzingi')
+        self.db_connection = db_connection
+        self.logger = logger
         if self.db_connection.is_connected():
-            print("MySQL Fuzzingzzingi Database connection successful")
+            self.logger.log("MySQL Fuzzingzzingi Database connection successful")
 
     def fetch_urls_from_db(self):
         urls = []
@@ -32,7 +25,7 @@ class TrafficIntercept:
             for row in rows:
                 urls.append(row[0])
         except Error as e:
-            print(f"The error '{e}' occurred")
+            self.logger.log(f"The error '{e}' occurred")
         finally:
             cursor.close()
         return urls
@@ -62,10 +55,10 @@ class TrafficIntercept:
             else:
                 self.handle_get_request(client_socket, req, url)
         except Exception as e:
-            print(f"[ERROR] Error handling client {addr}: {e}")
+            self.logger.log(f"[ERROR] Error handling client {addr}: {e}")
         finally:
             client_socket.close()
-            print(f"[INFO] Connection closed with {addr}")
+            self.logger.log(f"[INFO] Connection closed with {addr}")
 
     def handle_connect_request(self, client_socket, url):
         try:
@@ -85,7 +78,7 @@ class TrafficIntercept:
                         else:
                             client_socket.sendall(data)
         except Exception as e:
-            print(f"[!] Error handling CONNECT request: {e}")
+            self.logger.log(f"[!] Error handling CONNECT request: {e}")
         finally:
             client_socket.close()
 
@@ -94,14 +87,14 @@ class TrafficIntercept:
             info = "[!] Not Implemented(501)!\n"
         else:
             info = "[!] Bad Request(400)!\n"
-        print(info)
+        self.logger.log(info)
         client_socket.send(info.encode())
-        print(">> Keep going...\n")
+        self.logger.log(">> Keep going...\n")
         client_socket.close()
 
     def handle_get_request(self, client_socket, req, url):
-        print("* * * Request * * *\n")
-        print(req + "\n")
+        self.logger.log("* * * Request * * *\n")
+        self.logger.log(req + "\n")
 
         try:
             index = '/'.join(url.split("/")[3:])
@@ -126,14 +119,14 @@ class TrafficIntercept:
 
             # 캐시에 저장
             self.cache[target] = headers + response.text
-            print(">> New Cache Written!\n")
-            print("* * * Cache List * * *")
+            self.logger.log(">> New Cache Written!\n")
+            self.logger.log("* * * Cache List * * *")
             for index, key in enumerate(self.cache.keys()):
-                print(f"[{index + 1}] {key}")
-            print("\n>> Keep going...\n")
+                self.logger.log(f"[{index + 1}] {key}")
+            self.logger.log("\n>> Keep going...\n")
         except requests.RequestException as e:
             info = f"[!] Error fetching URL {url}: {e}\n"
-            print(info)
+            self.logger.log(info)
             client_socket.send(info.encode())
         finally:
             client_socket.close()
@@ -141,18 +134,5 @@ class TrafficIntercept:
     def send_cached_response(self, client_socket, target):
         get = self.cache[target]
         client_socket.sendall(get.encode())
-        print(">> Cache Used!\n")
+        self.logger.log(">> Cache Used!\n")
         client_socket.close()
-
-def signal_handler(signal, frame):
-    print('Signal received, stopping server.')
-    server.stop_server()
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-p', type=int, default=8888, help="port number (default: 8888)")
-    args = parser.parse_args()
-    my_port = args.p
-    server = NetworkListener(my_port, handler_factory=TrafficIntercept)
-    signal.signal(signal.SIGINT, signal_handler)
-    server.start_server()
