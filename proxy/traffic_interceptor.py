@@ -52,10 +52,10 @@ class TrafficIntercept:
             else:
                 self.handle_get_request(client_socket, req, url)
         except Exception as e:
-            self.logger.log(f"[ERROR] Error handling client {addr}: {e}")
+            self.logger.log(f"[ERROR] Error traffic handling client {addr}: {e}")
         finally:
             client_socket.close()
-            self.logger.log(f"[INFO] Connection closed with {addr}")
+            self.logger.log(f"Traffic connection closed with {addr}")
 
     def handle_connect_request(self, client_socket, url):
         try:
