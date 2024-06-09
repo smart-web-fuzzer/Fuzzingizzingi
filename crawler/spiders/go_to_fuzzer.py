@@ -2,7 +2,6 @@ from bs4 import BeautifulSoup
 import scrapy
 from items import PacketFromDB
 
-
 class SendToFuzzer:
 
     def __init__(self):

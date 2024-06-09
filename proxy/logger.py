@@ -6,7 +6,8 @@ class Logger:
         self.packet_logs = []
         
     def log(self, message):
-        print(f"[LOG] {message}")  # 로그 메시지를 콘솔에 출력
+        # 로그 메시지를 콘솔에 출력
+        print(f"[LOG] {message}")
 
     class PacketLog:
         def __init__(self, source_ip, destination_url, request_size, response_size):

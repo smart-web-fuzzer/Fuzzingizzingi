@@ -36,17 +36,20 @@ class DuplicateURLPipeline:
                 self.cursor = self.connection.cursor()
 
         except errorcode as e:
-            spider.logger.error(f"Error while connecting to MySQL: {e}") # 연결 오류 로깅
+            spider.logger.error(f"Error while connecting to MySQL: {e}")
 
     def close_spider(self, spider):
 
         if self.connection.is_connected():
-            self.connection.commit() # 데이터베이스 저장 커밋하기
+            # 데이터베이스 저장 커밋하기
+            self.connection.commit()
             self.cursor.close()
-            self.connection.close() # 데이터베이스 연결 닫기
+            # 데이터베이스 연결 닫기
+            self.connection.close()
 
     def process_item(self, spider):
-        normalized_url = spider.normalize_url(CrawledURL['url'])  # URL 정규화
+        # URL 정규화
+        normalized_url = spider.normalize_url(CrawledURL['url'])
         if normalized_url in self.seen_urls:
             raise DropItem(f"Duplicate URL found: {CrawledURL['url']}")
 
@@ -67,6 +70,7 @@ class DuplicateURLPipeline:
 
             except errorcode as e:
                 logging.error(f'Error {e} When Send URL to DB')
-                self.connection.rollback()  # 롤백 추가
+                # 롤백 추가
+                self.connection.rollback()
 
             return CrawledURL

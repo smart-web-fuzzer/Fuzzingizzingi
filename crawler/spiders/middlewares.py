@@ -10,11 +10,11 @@ from urllib.parse import urlparse, parse_qs, urlunparse, urlencode
 import logging
 import tldextract
 
-
 class SeleniumMiddleware:
     def __init__(self):
         options = Options()
-        options.headless = True  # 브라우저 창 숨기는 옵션
+        # 브라우저 창 숨기는 옵션
+        options.headless = True
         # options.add_argument("--disable-popup-blocking")  # 팝업 차단 비활성화
         # options.add_argument("--disable-notifications")  # 알림 차단
 
@@ -77,7 +77,8 @@ class SeleniumMiddleware:
     #     except Exception as e:
     #         logging.error(f'Error detected in Function form_input as {e}')
 
-    def obj_click(self, original_domain):  # click 가능한 객체 클릭 하는 함수
+    # click 가능한 객체 클릭 하는 함수
+    def obj_click(self, original_domain):
         try:
             onclick_elements = self.driver.find_elements(By.XPATH, '//*[@onclick]')
             img_elements = self.driver.find_elements(By.XPATH, '//img')

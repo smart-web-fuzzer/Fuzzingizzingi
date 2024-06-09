@@ -1,9 +1,7 @@
 import sys
 import signal
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from proxy.logger import Logger
-from proxy.traffic_interceptor import TrafficIntercept
+from logger import Logger
+from traffic_interceptor import TrafficIntercept
 from db_connector import create_connection
 
 def signal_handler(server):
@@ -14,7 +12,7 @@ def signal_handler(server):
     return handler
 
 if __name__ == "__main__":
-    from proxy.network_listener import NetworkListener
+    from network_listener import NetworkListener
     
     logger = Logger()
     logger.log("Starting the server...")
@@ -26,7 +24,7 @@ if __name__ == "__main__":
         host_name="13.209.63.65",
         user_name="zzingzzingi",
         user_password="!Ru7eP@ssw0rD!12",
-        db_name="fuzzingzzingi"
+        db_name="Fuzzingzzingi"
     )
 
     if db_connection.is_connected():
