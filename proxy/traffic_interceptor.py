@@ -13,9 +13,7 @@ class TrafficIntercept:
         self.http_methods = ["GET"]
         self.db_connection = db_connection
         self.logger = logger
-        if self.db_connection.is_connected():
-            self.logger.log("MySQL Fuzzingzzingi Database connection successful")
-
+        
     def fetch_urls_from_db(self):
         urls = []
         try:

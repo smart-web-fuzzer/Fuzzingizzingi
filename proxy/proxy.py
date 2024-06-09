@@ -28,6 +28,9 @@ if __name__ == "__main__":
         db_name="fuzzingzzingi"
     )
 
+    if db_connection.is_connected():
+        logger.log("MySQL Fuzzingzzingi Database connection successful")
+
     interceptor = TrafficIntercept(db_connection=db_connection, logger=logger)
     server = NetworkListener(port=port, logger=logger, db_connection=db_connection, request_handler=interceptor.handle_client)
     signal.signal(signal.SIGINT, lambda s, f: signal_handler(server)(s, f))
