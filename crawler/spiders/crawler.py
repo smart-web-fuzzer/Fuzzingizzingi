@@ -1,6 +1,3 @@
-#crawler.py
-
-
 import scrapy
 import tldextract
 from urllib.parse import urlparse, parse_qs, urlunparse, urlencode

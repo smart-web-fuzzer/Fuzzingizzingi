@@ -13,7 +13,7 @@ class NetworkListener:
         self.request_handler = handler
 
     def handle_client(self, client_socket):
-        from proxy.request_modifier import save_packet
+        from request_modifier import save_packet
         
         self.logger.log("Client connected")
         request = client_socket.recv(4096)
