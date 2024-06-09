@@ -4,7 +4,6 @@ import socket
 import select
 import requests
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from db_connector import create_connection
 from mysql.connector import Error
 
 class TrafficIntercept:

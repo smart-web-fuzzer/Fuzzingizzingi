@@ -1,6 +1,5 @@
 import socket
 import threading
-from proxy.request_modifier import save_packet
 
 class NetworkListener:
     def __init__(self, port, logger, db_connection, request_handler=None):
@@ -14,6 +13,8 @@ class NetworkListener:
         self.request_handler = handler
 
     def handle_client(self, client_socket):
+        from proxy.request_modifier import save_packet
+        
         self.logger.log("Client connected")
         request = client_socket.recv(4096)
         self.logger.log(f"Received: {request.decode()}")
