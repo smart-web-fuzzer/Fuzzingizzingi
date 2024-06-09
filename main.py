@@ -4,12 +4,13 @@
 
 import socket
 import time
+from urllib.parse import urlparse
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
 from crawler.spiders.crawler import MySpider
+from proxy.certificate_manager import create_certificate, update_nginx_config
 # from Myproject.Myproject.items import PacketFromDB
 # from Myproject.Myproject.spiders.go_to_fuzzer import SendToFuzzer
-import sys
 # from server import PacketLoggerServer
 
 def connect_server():
@@ -23,6 +24,10 @@ def connect_server():
     except Exception as e:
         print("Failed to connect to server:", e)
 
+def extract_domain(url):
+    parsed_url = urlparse(url)
+    domain = parsed_url.netloc
+    return domain
 
 def main():
     print("======================================================================")
@@ -51,13 +56,20 @@ def main():
 
     connect_server()
 
-    # 크롤러?에 URL 전달 하는 코드 구현
+    # URL 입력 받기
     print("Please enter the target URL")
-    start_url = input("> ")
+    target_url = input("> ")
+    
+    # 도메인 추출
+    domain = extract_domain(target_url)
+
+    # 인증서 생성 및 Nginx 설정 업데이트
+    key_file, crt_file = create_certificate(domain)
+    update_nginx_config(domain, key_file, crt_file)
 
     # Scrapy 크롤러 프로세스 시작
     process = CrawlerProcess(get_project_settings())
-    process.crawl(MySpider, start_url=start_url)  # MySpider 클래스의 이름을 사용
+    process.crawl(MySpider, start_url=domain)  # MySpider 클래스의 이름을 사용
     process.start()
 
     # 옵션 선택... 토글 방식으로 ON/OFF 구현........

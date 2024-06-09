@@ -1,65 +1,52 @@
-from cryptography import x509
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.primitives import serialization, hashes
-from cryptography.x509.oid import NameOID
-# 유효기간 모듈
-from datetime import datetime, timedelta
+import subprocess
 
-# 클래스 초기화
-class CertificateManager:
-    def __init__(self, cert_path="wildcard_cert.pem", key_path="wildcard_key.pem"):
-        self.cert_path = cert_path
-        self.key_path = key_path
-        self.key = None
-        # 디렉토리가 존재하지 않으면 생성
-	# 개인 키 생성
-    def generate_private_key(self):
-        self.key = rsa.generate_private_key(
-            public_exponent=65537,
-            key_size=2048
-        )
-        with open(self.key_path, "wb") as f:
-            f.write(self.key.private_bytes(
-                encoding=serialization.Encoding.PEM,
-                format=serialization.PrivateFormat.TraditionalOpenSSL,
-                encryption_algorithm=serialization.NoEncryption()
-            ))
-	# 인증서 생성
-    def generate_wildcard_cert(self, base_domain="example.com"):
-        if self.key is None:
-            self.generate_private_key()
-        
-        wildcard_domain = f"*.{base_domain}"
-        subject = issuer = x509.Name([
-            x509.NameAttribute(NameOID.COUNTRY_NAME, u"KR"),
-            x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, u"Seoul"),
-            x509.NameAttribute(NameOID.LOCALITY_NAME, u"Seoul"),
-            x509.NameAttribute(NameOID.ORGANIZATION_NAME, u"Fuzzingzzingi"),
-            x509.NameAttribute(NameOID.COMMON_NAME, wildcard_domain),
-        ])
-        
-        cert = (
-            x509.CertificateBuilder()
-            .subject_name(subject)
-            .issuer_name(issuer)
-            .public_key(self.key.public_key())
-            .serial_number(x509.random_serial_number())
-            .not_valid_before(datetime.utcnow())
-            .not_valid_after(datetime.utcnow() + timedelta(days=365))
-            .add_extension(x509.SubjectAlternativeName([x509.DNSName(wildcard_domain)]), critical=False)
-            .sign(self.key, hashes.SHA256())
-        )
-        
-        with open(self.cert_path, "wb") as f:
-            f.write(cert.public_bytes(serialization.Encoding.PEM))
+def create_certificate(domain):
+    # Let's Encrypt Certbot 사용
+    subprocess.run([
+        "sudo", "certbot", "certonly", "--standalone", 
+        "--non-interactive", "--agree-tos", 
+        "-d", domain, "--email", "numbbvi@naver.com"
+    ])
 
-    def get_cert_path(self):
-        return self.cert_path
+    key_file = f"/etc/letsencrypt/live/{domain}/privkey.pem"
+    crt_file = f"/etc/letsencrypt/live/{domain}/fullchain.pem"
+    ca_file = crt_file
 
-    def get_key_path(self):
-        return self.key_path
+    return key_file, crt_file, ca_file
 
-if __name__ == "__main__":
-    cm = CertificateManager(cert_path="wildcard_cert.pem", key_path="wildcard_key.pem")
-    cm.generate_private_key()
-    cm.generate_wildcard_cert(base_domain="example.com")
+def update_nginx_config(domain, key_file, crt_file, ca_file):
+    server_ip = "13.209.63.65"
+    server_port = 8888
+
+    nginx_config = f"""
+    server {{
+        listen 80;
+        server_name {domain};
+        return 301 https://$server_name$request_uri;
+    }}
+
+    server {{
+        listen 443 ssl;
+        server_name {domain};
+
+        ssl_certificate {crt_file};
+        ssl_certificate_key {key_file};
+        ssl_trusted_certificate {ca_file};
+
+        location / {{
+            proxy_pass http://{server_ip}:{server_port};
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_cache_bypass $http_upgrade;
+        }}
+    }}
+    """
+
+    config_path = f"/etc/nginx/sites-available/{domain}"
+    with open(config_path, "w") as file:
+        file.write(nginx_config)
+
+    subprocess.run(["sudo", "ln", "-sf", config_path, f"/etc/nginx/sites-enabled/{domain}"])
+    subprocess.run(["sudo", "systemctl", "restart", "nginx"])
