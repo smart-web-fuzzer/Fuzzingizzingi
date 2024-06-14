@@ -10,6 +10,7 @@ from socketserver import ThreadingMixIn
 import argparse
 import sys
 import glob
+import select
 
 class CustomThreadingHTTPServer(ThreadingMixIn, HTTPServer):
     address_family = socket.AF_INET6
@@ -143,6 +144,7 @@ class TrafficIntercept:
             sys.exit(0)
 
         protocol = "HTTP/1.1"
+        import http.server
         http.server.test(
             HandlerClass=CustomProxyRequestHandler,
             ServerClass=CustomThreadingHTTPServer,
