@@ -11,6 +11,7 @@ import argparse
 import sys
 import glob
 import select
+import logging
 
 class CustomThreadingHTTPServer(ThreadingMixIn, HTTPServer):
     address_family = socket.AF_INET6
@@ -96,15 +97,15 @@ class CustomProxyRequestHandler(BaseHTTPRequestHandler):
 class TrafficIntercept:
     def __init__(self, db_connection, logger):
         self.db_connection = db_connection
-        self.logger = logger
+        self.logger = logger or logging.getLogger(__name__)
 
     def handle_client(self, client_socket, addr):
         from request_modifier import save_packet
 
         try:
-            self.logger.log(f"Client connected from {addr}")
+            self.logger.info(f"Client connected from {addr}")
             request = client_socket.recv(4096)
-            self.logger.log(f"Received: {request.decode()}")
+            self.logger.info(f"Received: {request.decode()}")
 
             # AWS 서버에 연결
             remote_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -120,10 +121,10 @@ class TrafficIntercept:
 
             remote_socket.close()
         except Exception as e:
-            self.logger.log(f"[ERROR] Error handling client {addr}: {e}")
+            self.logger.error(f"[ERROR] Error handling client {addr}: {e}")
         finally:
             client_socket.close()
-            self.logger.log(f"Connection closed with {addr}")
+            self.logger.info(f"Connection closed with {addr}")
 
     def start_server(self):
         parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -160,7 +161,7 @@ class TrafficIntercept:
             # Create CA key
             ca_key_command = ["openssl", "genrsa", "-out", cli_args.ca_key, "2048"]
             Popen(ca_key_command).communicate()
-            self.logger.log("CA key generated")
+            self.logger.info("CA key generated")
 
             # Create CA certificate
             ca_cert_command = [
@@ -168,20 +169,23 @@ class TrafficIntercept:
                 "-sha256", "-out", cli_args.ca_cert, "-subj", "/CN=Proxy3 CA"
             ]
             Popen(ca_cert_command).communicate()
-            self.logger.log("CA certificate generated")
+            self.logger.info("CA certificate generated")
 
             # Create server key
             cert_key_command = ["openssl", "genrsa", "-out", cli_args.cert_key, "2048"]
             Popen(cert_key_command).communicate()
-            self.logger.log("Server key generated")
+            self.logger.info("Server key generated")
 
             # Clean up old certificates
             for old_cert in glob.glob(os.path.join(cli_args.cert_dir, "*.pem")):
                 os.remove(old_cert)
-            self.logger.log("Old certificates removed")
+            self.logger.info("Old certificates removed")
 
+        except FileNotFoundError as e:
+            print(f"Error generating certificates: {e}")
         except Exception as e:
-            self.logger.log(f"Error generating certificates: {e}")
+            self.logger.error(f"Error generating certificates: {e}")
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     TrafficIntercept(None, None).start_server()
