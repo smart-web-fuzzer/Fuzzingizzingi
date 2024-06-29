@@ -11,11 +11,10 @@ import logging
 import select
 from http.server import BaseHTTPRequestHandler
 from utils import decode_content_body, encode_content_body, filter_headers, with_color
-from savepacket import save_packet_to_db
+from savepacket import save_packet_to_db  # 추가된 부분
 
 class CustomProxyRequestHandler(BaseHTTPRequestHandler):
     lock = threading.Lock()
-    packet_storage = []  # 패킷 저장을 위한 클래스 변수
 
     def __init__(self, *args, server_args=None, **kwargs):
         self.tls = threading.local()
@@ -77,6 +76,7 @@ class CustomProxyRequestHandler(BaseHTTPRequestHandler):
             self.send_error(500, f"Unexpected error: {str(e)}")
             return
 
+        
         self._read_write(conns)
 
     def connect_relay(self):
@@ -103,12 +103,7 @@ class CustomProxyRequestHandler(BaseHTTPRequestHandler):
                             conns[1].sendall(data)
                         else:
                             conns[0].sendall(data)
-                        # 패킷 데이터 저장
-                        CustomProxyRequestHandler.packet_storage.append(data)
-                        # 일정 주기마다 패킷 저장
-                        if len(CustomProxyRequestHandler.packet_storage) > 100:
-                            save_packet_to_db(CustomProxyRequestHandler.packet_storage)
-                            CustomProxyRequestHandler.packet_storage.clear()
+                        # 패킷 데이터 저장 (매번 저장하지 않고 요청 완료 후 저장하도록 수정)
         except Exception as e:
             logging.error(f"Error in _read_write: {str(e)}")
 
@@ -123,13 +118,6 @@ class CustomProxyRequestHandler(BaseHTTPRequestHandler):
                 if not chunk:
                     break
                 self.wfile.write(chunk)
-                # 패킷 데이터 저장
-                CustomProxyRequestHandler.packet_storage.append(chunk)
-                # 일정 주기마다 패킷 저장
-                if len(CustomProxyRequestHandler.packet_storage) > 100:
-                    save_packet_to_db(CustomProxyRequestHandler.packet_storage)
-                    CustomProxyRequestHandler.packet_storage.clear()
-            self.wfile.flush()
         except socket.error:
             pass
 
@@ -197,7 +185,8 @@ def handle_get(proxy_handler):
     response.headers["Content-Length"] = str(len(response_body))
 
     response.headers = filter_headers(response.headers)
-
+    
+    
     proxy_handler.send_response_only(response.status, response.reason)
     for key, value in response.headers.items():
         proxy_handler.send_header(key, value)
@@ -205,130 +194,24 @@ def handle_get(proxy_handler):
     proxy_handler.wfile.write(response_body)
     proxy_handler.wfile.flush()
 
-    # 패킷 데이터 저장
-    CustomProxyRequestHandler.packet_storage.append(request_body)
-    CustomProxyRequestHandler.packet_storage.append(response_body_plain)
-    # 일정 주기마다 패킷 저장
-    if len(CustomProxyRequestHandler.packet_storage) > 100:
-        save_packet_to_db(CustomProxyRequestHandler.packet_storage)
-        CustomProxyRequestHandler.packet_storage.clear()
+    # 패킷 데이터 저장 (요청 완료 후 바로 저장)
+    packet = {
+        'url': request.path,
+        'parameters': urllib.parse.parse_qs(parsed_url.query),
+        'method': request.command,
+        'protocol_version': request.request_version,
+        'headers': dict(request.headers),
+        'cookies': dict(urllib.parse.parse_qsl(request.headers.get('Cookie', ''))),
+        'response_body': response_body_plain.decode('iso-8859-1')
+    }
+    save_packet_to_db([packet])
 
-    # 추가된 로그 출력
-    display_info(request, request_body, response, response_body_plain)
+# 종료 시 패킷 데이터 저장 (더 이상 필요 없음)
+# import atexit
 
-def relay_streaming(proxy_handler, response):
-    proxy_handler.send_response_only(response.status, response.reason)
-    for key, value in response.headers.items():
-        proxy_handler.send_header(key, value)
-    proxy_handler.end_headers()
-    try:
-        while True:
-            chunk = response.read(8192)
-            if not chunk:
-                break
-            proxy_handler.wfile.write(chunk)
-            # 패킷 데이터 저장
-            CustomProxyRequestHandler.packet_storage.append(chunk)
-            # 일정 주기마다 패킷 저장
-            if len(CustomProxyRequestHandler.packet_storage) > 100:
-                save_packet_to_db(CustomProxyRequestHandler.packet_storage)
-                CustomProxyRequestHandler.packet_storage.clear()
-        proxy_handler.wfile.flush()
-    except socket.error:
-        pass
+# def save_packets():
+#     save_packet_to_db(CustomProxyRequestHandler.packet_storage)
 
-def display_info(request, request_body, response, response_body):
-    request_header_text = "%s %s %s\n%s" % (
-        request.command,
-        request.path,
-        request.request_version,
-        request.headers,
-    )
-    version_table = {10: "HTTP/1.0", 11: "HTTP/1.1"}
-    response_header_text = "%s %d %s\n%s" % (
-        version_table[response.version],
-        response.status,
-        response.reason,
-        response.headers,
-    )
+# atexit.register(save_packets)
 
-    print(with_color(33, request_header_text))
-
-    parsed_url = urllib.parse.urlsplit(request.path)
-    if parsed_url.query:
-        query_text = urllib.parse.parse_qsl(parsed_url.query)
-        print(with_color(32, "==== QUERY PARAMETERS ====\n%s\n" % query_text))
-
-    cookie_header = request.headers.get("Cookie", "")
-    if cookie_header:
-        cookie_header = urllib.parse.parse_qsl(re.sub(r";\s*", "&", cookie_header))
-        print(with_color(32, "==== COOKIE ====\n%s\n" % cookie_header))
-
-    authorization = request.headers.get("Authorization", "")
-    if authorization.lower().startswith("basic"):
-        token = authorization.split()[1].decode("base64")
-        print(with_color(31, "==== BASIC AUTH ====\n%s\n" % token))
-
-    if request_body:
-        request_body_text = None
-        content_type = request.headers.get("Content-Type", "")
-
-        if content_type.startswith("application/x-www-form-urlencoded"):
-            request_body_text = urllib.parse.parse_qsl(request_body)
-        elif content_type.startswith("application/json"):
-            try:
-                json_obj = json.loads(request_body)
-                json_str = json.dumps(json_obj, indent=2)
-                if json_str.count("\n") < 50:
-                    request_body_text = json_str
-                else:
-                    lines = json_str.splitlines()
-                    request_body_text = "%s\n(%d lines)" % (
-                        "\n".join(lines[:50]), 
-                        len(lines),
-                    )
-            except ValueError:
-                request_body_text = request_body
-        elif len(request_body) < 1024:
-            request_body_text = request_body
-
-        if request_body_text:
-            print(with_color(32, "==== REQUEST BODY ====\n%s\n" % request_body_text))
-
-    print(with_color(36, response_header_text))
-
-    cookies = response.headers.get("Set-Cookie")
-    if cookies:
-        print(with_color(31, "==== SET-COOKIE ====\n%s\n" % cookies))
-
-    if response_body:
-        response_body_text = None
-        content_type = response.headers.get("Content-Type", "")
-
-        if content_type.startswith("application/json"):
-            try:
-                json_obj = json.loads(response_body)
-                json_str = json.dumps(json_obj, indent=2)
-                if json_str.count("\n") < 50:
-                    response_body_text = json_str
-                else:
-                    lines = json_str.splitlines()
-                    response_body_text = "%s\n(%d lines)" % (
-                        "\n".join(lines[:50]),
-                        len(lines),
-                    )
-            except ValueError:
-                response_body_text = response_body
-        elif content_type.startswith("text/html"):
-            match = re.search(rb"<title[^>]*>\s*([^<]+?)\s*</title>", response_body, re.I)
-            if match:
-                print(
-                    with_color(
-                        32, "==== HTML TITLE ====\n%s\n" % match.group(1).decode()
-                    )
-                )
-        elif content_type.startswith("text/") and len(response_body) < 1024:
-            response_body_text = response_body
-
-        if response_body_text:
-            print(with_color(32, "==== RESPONSE BODY ====\n%s\n" % response_body_text))
+                                            

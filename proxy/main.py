@@ -3,13 +3,11 @@ import logging
 from server import CustomThreadingHTTPServer
 from proxy_handler import CustomProxyRequestHandler
 from cert_manager import generate_certs
-from savepacket import save_packet_to_db
-import atexit
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("-b", "--bind", default="localhost", help="Host to bind")
-    parser.add_argument("-p", "--port", type=int, default=6666, help="Port to bind")
+    parser.add_argument("-b", "--bind", default="0.0.0.0", help="Host to bind")  # 기본값을 0.0.0.0으로 설정
+    parser.add_argument("-p", "--port", type=int, default=7777, help="Port to bind")
     parser.add_argument("-d", "--domain", default="*", help="Domain to intercept, if not set, intercept all.")
     parser.add_argument("--ca-key", default="ca-key.pem", help="CA key file")
     parser.add_argument("--ca-cert", default="ca-cert.pem", help="CA cert file")
@@ -34,12 +32,4 @@ if __name__ == "__main__":
 
     httpd = CustomHTTPServer((args.bind, args.port), handler)
     logging.info(f"Serving HTTP on {args.bind} port {args.port} (http://{args.bind}:{args.port}/) ...")
-
-    # 서버 종료 시 패킷 저장
-    atexit.register(lambda: save_packet_to_db(CustomProxyRequestHandler.packet_storage))
-    try:
-        httpd.serve_forever()
-    except KeyboardInterrupt:
-        pass
-    finally:
-        httpd.server_close()
+    httpd.serve_forever()
