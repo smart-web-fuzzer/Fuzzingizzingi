@@ -11,6 +11,7 @@ import logging
 import select
 from http.server import BaseHTTPRequestHandler
 from utils import decode_content_body, encode_content_body, filter_headers, with_color
+from savepacket import save_packet_to_db
 
 class CustomProxyRequestHandler(BaseHTTPRequestHandler):
     lock = threading.Lock()
@@ -44,11 +45,11 @@ class CustomProxyRequestHandler(BaseHTTPRequestHandler):
         current_dir = os.path.dirname(os.path.abspath(__file__))
         certfile = os.path.join(current_dir, 'certs', 'ca-cert.pem')
         keyfile = os.path.join(current_dir, 'certs', 'cert-key.pem')
-        
+
         logging.debug(f"Using certfile: {certfile}")
         logging.debug(f"Using keyfile: {keyfile}")
         logging.debug(f"Current working directory: {current_dir}")
-        
+
         if not os.path.exists(certfile) or not os.path.exists(keyfile):
             logging.error(f"Certificate files not found. Certfile: {certfile}, Keyfile: {keyfile}")
             self.send_error(500, "Certificate files not found")
@@ -104,6 +105,10 @@ class CustomProxyRequestHandler(BaseHTTPRequestHandler):
                             conns[0].sendall(data)
                         # 패킷 데이터 저장
                         CustomProxyRequestHandler.packet_storage.append(data)
+                        # 일정 주기마다 패킷 저장
+                        if len(CustomProxyRequestHandler.packet_storage) > 100:
+                            save_packet_to_db(CustomProxyRequestHandler.packet_storage)
+                            CustomProxyRequestHandler.packet_storage.clear()
         except Exception as e:
             logging.error(f"Error in _read_write: {str(e)}")
 
@@ -120,6 +125,10 @@ class CustomProxyRequestHandler(BaseHTTPRequestHandler):
                 self.wfile.write(chunk)
                 # 패킷 데이터 저장
                 CustomProxyRequestHandler.packet_storage.append(chunk)
+                # 일정 주기마다 패킷 저장
+                if len(CustomProxyRequestHandler.packet_storage) > 100:
+                    save_packet_to_db(CustomProxyRequestHandler.packet_storage)
+                    CustomProxyRequestHandler.packet_storage.clear()
             self.wfile.flush()
         except socket.error:
             pass
@@ -199,6 +208,10 @@ def handle_get(proxy_handler):
     # 패킷 데이터 저장
     CustomProxyRequestHandler.packet_storage.append(request_body)
     CustomProxyRequestHandler.packet_storage.append(response_body_plain)
+    # 일정 주기마다 패킷 저장
+    if len(CustomProxyRequestHandler.packet_storage) > 100:
+        save_packet_to_db(CustomProxyRequestHandler.packet_storage)
+        CustomProxyRequestHandler.packet_storage.clear()
 
     # 추가된 로그 출력
     display_info(request, request_body, response, response_body_plain)
@@ -216,6 +229,10 @@ def relay_streaming(proxy_handler, response):
             proxy_handler.wfile.write(chunk)
             # 패킷 데이터 저장
             CustomProxyRequestHandler.packet_storage.append(chunk)
+            # 일정 주기마다 패킷 저장
+            if len(CustomProxyRequestHandler.packet_storage) > 100:
+                save_packet_to_db(CustomProxyRequestHandler.packet_storage)
+                CustomProxyRequestHandler.packet_storage.clear()
         proxy_handler.wfile.flush()
     except socket.error:
         pass
@@ -267,7 +284,7 @@ def display_info(request, request_body, response, response_body):
                 else:
                     lines = json_str.splitlines()
                     request_body_text = "%s\n(%d lines)" % (
-                        "\n".join(lines[:50]),
+                        "\n".join(lines[:50]), 
                         len(lines),
                     )
             except ValueError:
